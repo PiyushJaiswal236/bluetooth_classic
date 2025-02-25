@@ -180,6 +180,49 @@ class BluetoothClassicPlugin: FlutterPlugin, MethodCallHandler, PluginRegistry.R
       )
       "disconnect" -> disconnect(result)
       "write" -> write(result, call.argument<String>("message")!!)
+      "isBluetoothEnabled" -> result.success(ba.isEnabled)
+      "enableBluetooth" -> {
+        if (!ba.isEnabled) {
+          val enabled = ba.enable()
+          result.success(enabled)
+        } else {
+          result.success(true)
+        }
+      }
+      "pairDevice"->{
+        val deviceId = call.argument<String>("deviceId")
+        if (deviceId == null) {
+          result.error("invalid_argument", "DeviceId is required", null)
+          return
+        }
+        try {
+          val device = ba.getRemoteDevice(deviceId)
+          // If the device is already paired, return success immediately.
+          if (device.bondState == BluetoothDevice.BOND_BONDED) {
+            result.success(true)
+            return
+          }
+          // Initiate pairing by calling createBond()
+          val pairingInitiated = device.createBond()
+          if (pairingInitiated) {
+            result.success(true)
+          } else {
+            result.error("pairing_failed", "Pairing request failed to initiate", null)
+          }
+        } catch (e: Exception) {
+          result.error("pairing_error", "Error during pairing: ${e.localizedMessage}", e.stackTraceToString())
+        }
+      }
+      "writeRawBytes" -> {
+        // Retrieve the byte array from the method call arguments.
+        // Flutter will pass a Uint8List, which is automatically converted to ByteArray in Kotlin.
+        val rawData = call.argument<ByteArray>("data")
+        if (rawData == null) {
+          result.error("invalid_argument", "No raw data provided", null)
+          return
+        }
+        writeRawBytes(result, rawData)
+      }
       else -> result.notImplemented()
     }
   }
@@ -207,32 +250,89 @@ class BluetoothClassicPlugin: FlutterPlugin, MethodCallHandler, PluginRegistry.R
     android.util.Log.i("Bluetooth Disconnect", "disconnected")
     result.success(true)
   }
-
+  
   private fun connect(result: Result, deviceId: String, serviceUuid: String) {
-    try {
-      publishBluetoothStatus(1)
-      device = ba.getRemoteDevice(deviceId)
-      android.util.Log.i("Bluetooth Connection", "device found")
-      assert(device != null)
-      socket = device?.createRfcommSocketToServiceRecord(UUID.fromString(serviceUuid))
-      android.util.Log.i("Bluetooth Connection", "rfcommsocket found")
-      assert(socket != null)
-      socket?.connect()
-      android.util.Log.i("Bluetooth Connection", "socket connected")
-      thread = ConnectedThread(socket!!)
-      android.util.Log.i("Bluetooth Connection", "thread created")
-      assert(thread != null)
-      thread!!.start()
-      android.util.Log.i("Bluetooth Connection", "thread running")
-      result.success(true)
-      publishBluetoothStatus(2)
+    Thread {
+      try {
+        // Ensure Bluetooth is enabled
+        if (!ba.isEnabled) {
+          Handler(Looper.getMainLooper()).post {
+            result.error("bluetooth_disabled", "Bluetooth is disabled. Please enable Bluetooth and try again.", null)
+          }
+          return@Thread
+        }
 
-    } catch (e: IOException) {
-      android.util.Log.e("Bluetooth Connection", "connection failed", e)
-      publishBluetoothStatus(0)
-      result.error("connection_failed", "could not connect to device $deviceId", null)
-    }
+        publishBluetoothStatus(1)
+        device = ba.getRemoteDevice(deviceId)
+        if (device == null) {
+          Handler(Looper.getMainLooper()).post {
+            result.error("device_not_found", "Could not find device with ID: $deviceId", null)
+          }
+          return@Thread
+        }
+        android.util.Log.i("Bluetooth Connection", "Device found: ${device!!.name}")
+
+        // Stop discovery to avoid interference
+        if (ba.isDiscovering) {
+          ba.cancelDiscovery()
+        }
+
+        socket = device?.createRfcommSocketToServiceRecord(UUID.fromString(serviceUuid))
+        if (socket == null) {
+          Handler(Looper.getMainLooper()).post {
+            result.error("socket_creation_failed", "Failed to create RFCOMM socket for device: ${device!!.name}", null)
+          }
+          return@Thread
+        }
+        android.util.Log.i("Bluetooth Connection", "RFComm socket found")
+
+        // Perform the blocking connect() call on this background thread
+        try {
+          socket?.connect()
+        } catch (e: IOException) {
+          val errorMsg = "Socket connection failed: ${e.localizedMessage}. " +
+                  "This may be due to a timeout, the device being out of range, or an incorrect service UUID."
+          android.util.Log.e("Bluetooth Connection", errorMsg, e)
+          publishBluetoothStatus(0)
+          Handler(Looper.getMainLooper()).post {
+            result.error("connection_failed", errorMsg, e.stackTraceToString())
+          }
+          return@Thread
+        }
+
+        android.util.Log.i("Bluetooth Connection", "Socket connected")
+        thread = ConnectedThread(socket!!)
+        thread!!.start()
+        android.util.Log.i("Bluetooth Connection", "Connected thread started")
+        Handler(Looper.getMainLooper()).post {
+          result.success(true)
+          publishBluetoothStatus(2)
+        }
+      } catch (e: SecurityException) {
+        val errorMsg = "Security exception: ${e.localizedMessage}. Check that all required Bluetooth permissions are granted."
+        android.util.Log.e("Bluetooth Connection", errorMsg, e)
+        publishBluetoothStatus(0)
+        Handler(Looper.getMainLooper()).post {
+          result.error("security_exception", errorMsg, e.stackTraceToString())
+        }
+      } catch (e: IllegalArgumentException) {
+        val errorMsg = "Illegal argument: ${e.localizedMessage}. Possibly an invalid UUID provided."
+        android.util.Log.e("Bluetooth Connection", errorMsg, e)
+        publishBluetoothStatus(0)
+        Handler(Looper.getMainLooper()).post {
+          result.error("invalid_uuid", errorMsg, e.stackTraceToString())
+        }
+      } catch (e: Exception) {
+        val errorMsg = "Unexpected error: ${e.localizedMessage}"
+        android.util.Log.e("Bluetooth Connection", errorMsg, e)
+        publishBluetoothStatus(0)
+        Handler(Looper.getMainLooper()).post {
+          result.error("unexpected_error", errorMsg, e.stackTraceToString())
+        }
+      }
+    }.start()
   }
+
 
   private fun startScan(result: Result) {
     Log.i("start_scan", "scan started")
@@ -317,6 +417,16 @@ class BluetoothClassicPlugin: FlutterPlugin, MethodCallHandler, PluginRegistry.R
       }
     }
     return false
+  }
+
+  private fun writeRawBytes(result: Result, data: ByteArray) {
+    Log.i("write_raw_handle", "inside write raw handle")
+    if (thread != null) {
+      thread!!.write(data)
+      result.success(true)
+    } else {
+      result.error("write_impossible", "could not send raw data to unconnected device", null)
+    }
   }
 
   @SuppressLint("MissingPermission")
