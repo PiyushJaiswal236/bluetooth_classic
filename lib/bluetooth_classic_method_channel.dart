@@ -132,4 +132,36 @@ class MethodChannelBluetoothClassic extends BluetoothClassicPlatform {
         .invokeMethod<bool>("write", <String, String>{"message": message});
     return res!;
   }
+
+  Future<bool> writeRawBytes(Uint8List data) async {
+    final bool? result = await methodChannel.invokeMethod<bool>(
+      "writeRawBytes",
+      <String, dynamic>{
+        "data": data,
+      },
+    );
+    return result ?? false;
+  }
+
+  @override
+  Future<bool> isBluetoothEnabled() async {
+    final bool? enabled = await methodChannel.invokeMethod<bool>("isBluetoothEnabled");
+    return enabled ?? false;
+  }
+
+  @override
+  Future<bool> enableBluetooth() async {
+    final bool? enabled = await methodChannel.invokeMethod<bool>("enableBluetooth");
+    return enabled ?? false;
+  }
+
+  @override
+  Future<bool> pairDevice(String address) async {
+    final bool? paired = await methodChannel.invokeMethod<bool>(
+      "pairDevice",
+      <String, String>{ "deviceId": address },
+    );
+    return paired ?? false;
+  }
+
 }
