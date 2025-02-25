@@ -47,4 +47,21 @@ class BluetoothClassic {
   Future<bool> write(String message) {
     return BluetoothClassicPlatform.instance.write(message);
   }
+  
+  Future<bool> isBluetoothEnabled()  {
+    return BluetoothClassicPlatform.instance.isBluetoothEnabled();
+  }
+  
+  Future<bool> enableBluetooth()  {
+    return BluetoothClassicPlatform.instance.enableBluetooth();
+  }
+
+  Future<bool> pairDevice(String address) {
+    return BluetoothClassicPlatform.instance.pairDevice(address);
+  }
+
+  Future<bool> writeRawBytes(Uint8List data) {
+    return BluetoothClassicPlatform.instance.writeRawBytes(data);
+  }
+
 }
