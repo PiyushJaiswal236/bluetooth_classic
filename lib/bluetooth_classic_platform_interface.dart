@@ -70,4 +70,21 @@ abstract class BluetoothClassicPlatform extends PlatformInterface {
   Future<bool> write(String message) {
     throw UnimplementedError('write() has not been implemented.');
   }
+  
+  Future<bool> isBluetoothEnabled() async {
+    throw UnimplementedError('isBluetoothEnabled() has not been implemented.');
+  }
+  
+  Future<bool> enableBluetooth() async {
+    throw UnimplementedError('enableBluetooth() has not been implemented.');
+  }
+
+  Future<bool> pairDevice(String address)async {
+    throw UnimplementedError('pairDevice() has not been implemented.');
+  }
+
+  Future<bool> writeRawBytes(Uint8List data)async {
+    throw UnimplementedError('writeRawBytes() has not been implemented.');
+  }
+
 }
