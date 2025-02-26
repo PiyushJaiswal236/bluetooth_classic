@@ -87,4 +87,9 @@ abstract class BluetoothClassicPlatform extends PlatformInterface {
     throw UnimplementedError('writeRawBytes() has not been implemented.');
   }
 
+  Future<bool> writeTwoUint8Lists(Uint8List data1, Uint8List data2) async {
+    throw UnimplementedError('writeTwoUint8Lists() has not been implemented.');
+  }
+
+
 }
