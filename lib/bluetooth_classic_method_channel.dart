@@ -133,11 +133,24 @@ class MethodChannelBluetoothClassic extends BluetoothClassicPlatform {
     return res!;
   }
 
+  @override
   Future<bool> writeRawBytes(Uint8List data) async {
     final bool? result = await methodChannel.invokeMethod<bool>(
       "writeRawBytes",
       <String, dynamic>{
         "data": data,
+      },
+    );
+    return result ?? false;
+  }
+
+  @override
+  Future<bool> writeTwoUint8Lists(Uint8List data1, Uint8List data2) async {
+    final bool? result = await methodChannel.invokeMethod<bool>(
+      "writeTwoUint8Lists",
+      <String, dynamic>{
+        "data1": data1,
+        "data2": data2,
       },
     );
     return result ?? false;
@@ -163,5 +176,6 @@ class MethodChannelBluetoothClassic extends BluetoothClassicPlatform {
     );
     return paired ?? false;
   }
+
 
 }
