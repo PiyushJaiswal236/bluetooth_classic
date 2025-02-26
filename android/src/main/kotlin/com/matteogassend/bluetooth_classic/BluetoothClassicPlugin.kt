@@ -199,12 +199,14 @@ class BluetoothClassicPlugin: FlutterPlugin, MethodCallHandler, PluginRegistry.R
           val device = ba.getRemoteDevice(deviceId)
           // If the device is already paired, return success immediately.
           if (device.bondState == BluetoothDevice.BOND_BONDED) {
+            android.util.Log.i("Bluetooth pairing succes", "device is already paired")
             result.success(true)
             return
           }
           // Initiate pairing by calling createBond()
           val pairingInitiated = device.createBond()
           if (pairingInitiated) {
+            android.util.Log.i("Bluetooth pairing succes", "device is after bonding paired")
             result.success(true)
           } else {
             result.error("pairing_failed", "Pairing request failed to initiate", null)
@@ -222,6 +224,15 @@ class BluetoothClassicPlugin: FlutterPlugin, MethodCallHandler, PluginRegistry.R
           return
         }
         writeRawBytes(result, rawData)
+      }
+      "writeTwoUint8Lists" -> {
+        val d1 = call.argument<ByteArray>("data1")
+        val d2 = call.argument<ByteArray>("data2")
+        if (d1 == null || d2 == null) {
+          result.error("invalid_argument", "Both data1 and data2 must be provided", null)
+          return
+        }
+        writeTwoUint8Lists(result, d1, d2)
       }
       else -> result.notImplemented()
     }
@@ -428,6 +439,25 @@ class BluetoothClassicPlugin: FlutterPlugin, MethodCallHandler, PluginRegistry.R
       result.error("write_impossible", "could not send raw data to unconnected device", null)
     }
   }
+
+  private fun writeTwoUint8Lists(result: Result, data1: ByteArray, data2: ByteArray) {
+    Log.i("write_two_uint8lists", "inside writeTwoUint8Lists")
+    // Check if the connection thread is active
+    if (thread != null) {
+      if (data1.size != 1 || data2.size != 1) {
+        result.error("invalid_data", "Each Uint8List must be exactly 1 byte", null)
+        return
+      }
+      // Combine the two bytes into a 2-byte array
+      val combined = byteArrayOf(data1[0], data2[0])
+//      Log.i("write_two_uint8lists","combined value:" combined)
+      thread!!.write(combined)
+      result.success(true)
+    } else {
+      result.error("write_impossible", "Could not send data: no device connected", null)
+    }
+  }
+
 
   @SuppressLint("MissingPermission")
   fun getDevices(result: Result) {
