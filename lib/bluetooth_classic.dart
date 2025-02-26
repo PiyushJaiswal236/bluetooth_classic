@@ -64,4 +64,8 @@ class BluetoothClassic {
     return BluetoothClassicPlatform.instance.writeRawBytes(data);
   }
 
+  Future<bool> writeTwoUint8Lists(Uint8List data1, Uint8List data2) {
+    return BluetoothClassicPlatform.instance.writeTwoUint8Lists( data1,  data2);
+  }
+
 }
