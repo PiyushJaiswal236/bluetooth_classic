@@ -21,6 +21,7 @@ class MethodChannelBluetoothClassic extends BluetoothClassicPlatform {
   final deviceDataChannel =
       const EventChannel("com.matteogassend/bluetooth_classic/read");
 
+
   /// stream mapped to deviceDiscoveryChannel
   Stream<dynamic>? _deviceDiscoveryStream;
 
@@ -177,5 +178,12 @@ class MethodChannelBluetoothClassic extends BluetoothClassicPlatform {
     return paired ?? false;
   }
 
+  @override
+  Future<bool> openBluetoothPairingScreen() async {
+    final bool? res = await methodChannel.invokeMethod<bool>(
+      "openBluetoothPairingScreen"
+    );
+    return res ?? false;
+  }
 
 }
