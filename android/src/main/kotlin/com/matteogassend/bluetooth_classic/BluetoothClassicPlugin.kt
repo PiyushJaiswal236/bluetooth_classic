@@ -121,8 +121,10 @@ class BluetoothClassicPlugin : FlutterPlugin, MethodCallHandler, PluginRegistry.
     }
 
     private fun publishBluetoothStatus(status: Int) {
-        android.util.Log.i("Bluetooth Device Status", "Status updated to $status")
-        bluetoothStatusChannelSink?.success(status)
+        Handler(Looper.getMainLooper()).post {
+            android.util.Log.i("Bluetooth Device Status", "Status updated to $status")
+            bluetoothStatusChannelSink?.success(status)
+        }
     }
 
     private fun publishBluetoothDevice(device: BluetoothDevice) {
@@ -171,19 +173,34 @@ class BluetoothClassicPlugin : FlutterPlugin, MethodCallHandler, PluginRegistry.
     override fun onMethodCall(call: MethodCall, result: Result) {
         Log.i("method_call", call.method)
         when (call.method) {
-            "getPlatformVersion" -> result.success("Android ${Build.VERSION.RELEASE}")
-            "initPermissions" -> initPermissions(result)
-            "getDevices" -> getDevices(result)
-            "startDiscovery" -> startScan(result)
-            "stopDiscovery" -> stopScan(result)
-            "connect" -> connect(
-                result, call.argument<String>("deviceId")!!,
-                call.argument<String>("serviceUUID")!!
-            )
-
-            "disconnect" -> disconnect(result)
-            "write" -> write(result, call.argument<String>("message")!!)
-            "isBluetoothEnabled" -> result.success(ba.isEnabled)
+            "getPlatformVersion" -> {
+                result.success("Android ${Build.VERSION.RELEASE}")
+            }
+            "initPermissions" -> {
+                initPermissions(result)
+            }
+            "getDevices" -> {
+                getDevices(result)
+            }
+            "startDiscovery" -> {
+                startScan(result)
+            }
+            "stopDiscovery" -> {
+                stopScan(result)
+            }
+            "connect" -> {
+                connect(result, call.argument<String>("deviceId")!!,
+                    call.argument<String>("serviceUUID")!!)
+            }
+            "disconnect" -> {
+                disconnect(result)
+            }
+            "write" -> {
+                write(result, call.argument<String>("message")!!)
+            }
+            "isBluetoothEnabled" -> {
+                result.success(ba.isEnabled)
+            }
             "enableBluetooth" -> {
                 if (!ba.isEnabled) {
                     val enabled = ba.enable()
@@ -192,7 +209,6 @@ class BluetoothClassicPlugin : FlutterPlugin, MethodCallHandler, PluginRegistry.
                     result.success(true)
                 }
             }
-
             "pairDevice" -> {
                 val deviceId = call.argument<String>("deviceId")
                 if (deviceId == null) {
@@ -201,16 +217,14 @@ class BluetoothClassicPlugin : FlutterPlugin, MethodCallHandler, PluginRegistry.
                 }
                 try {
                     val device = ba.getRemoteDevice(deviceId)
-                    // If the device is already paired, return success immediately.
                     if (device.bondState == BluetoothDevice.BOND_BONDED) {
-                        android.util.Log.i("Bluetooth pairing succes", "device is already paired")
+                        Log.i("Bluetooth pairing success", "Device is already paired")
                         result.success(true)
                         return
                     }
-                    // Initiate pairing by calling createBond()
                     val pairingInitiated = device.createBond()
                     if (pairingInitiated) {
-                        android.util.Log.i("Bluetooth pairing succes", "device is after bonding paired")
+                        Log.i("Bluetooth pairing success", "Pairing initiated")
                         result.success(true)
                     } else {
                         result.error("pairing_failed", "Pairing request failed to initiate", null)
@@ -219,10 +233,7 @@ class BluetoothClassicPlugin : FlutterPlugin, MethodCallHandler, PluginRegistry.
                     result.error("pairing_error", "Error during pairing: ${e.localizedMessage}", e.stackTraceToString())
                 }
             }
-
             "writeRawBytes" -> {
-                // Retrieve the byte array from the method call arguments.
-                // Flutter will pass a Uint8List, which is automatically converted to ByteArray in Kotlin.
                 val rawData = call.argument<ByteArray>("data")
                 if (rawData == null) {
                     result.error("invalid_argument", "No raw data provided", null)
@@ -230,7 +241,6 @@ class BluetoothClassicPlugin : FlutterPlugin, MethodCallHandler, PluginRegistry.
                 }
                 writeRawBytes(result, rawData)
             }
-
             "writeTwoUint8Lists" -> {
                 val d1 = call.argument<ByteArray>("data1")
                 val d2 = call.argument<ByteArray>("data2")
@@ -240,10 +250,22 @@ class BluetoothClassicPlugin : FlutterPlugin, MethodCallHandler, PluginRegistry.
                 }
                 writeTwoUint8Lists(result, d1, d2)
             }
-
-            else -> result.notImplemented()
+            "openBluetoothPairingScreen" -> {
+                try {
+                    val intent = Intent(android.provider.Settings.ACTION_BLUETOOTH_SETTINGS)
+                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    application.startActivity(intent)
+                    result.success(true)
+                } catch (e: Exception) {
+                    result.error("open_bluetooth_screen_error", e.localizedMessage, e.stackTraceToString())
+                }
+            }
+            else -> {
+                result.notImplemented()
+            }
         }
     }
+
 
     private fun write(result: Result, message: String) {
         Log.i("write_handle", "inside write handle")
