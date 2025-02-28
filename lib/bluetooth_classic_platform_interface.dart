@@ -90,6 +90,9 @@ abstract class BluetoothClassicPlatform extends PlatformInterface {
   Future<bool> writeTwoUint8Lists(Uint8List data1, Uint8List data2) async {
     throw UnimplementedError('writeTwoUint8Lists() has not been implemented.');
   }
+  Future<bool> openBluetoothPairingScreen() async {
+    throw UnimplementedError('writeTwoUint8Lists() has not been implemented.');
+  }
 
 
 }
