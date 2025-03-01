@@ -59,6 +59,11 @@ abstract class BluetoothClassicPlatform extends PlatformInterface {
         'onDeviceDataReceived() has not been implemented.');
   }
 
+  Stream<String> onBondStatusReceived() {
+    throw UnimplementedError(
+        'onBondStatusReceived() has not been implemented.');
+  }
+
   Future<bool> connect(String address, String serviceUUID) {
     throw UnimplementedError('connect() has not been implemented.');
   }
@@ -93,6 +98,4 @@ abstract class BluetoothClassicPlatform extends PlatformInterface {
   Future<bool> openBluetoothPairingScreen() async {
     throw UnimplementedError('writeTwoUint8Lists() has not been implemented.');
   }
-
-
 }
