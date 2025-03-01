@@ -39,7 +39,9 @@ class BluetoothClassic {
   Stream<Uint8List> onDeviceDataReceived() {
     return BluetoothClassicPlatform.instance.onDeviceDataReceived();
   }
-
+  Stream<String> onBondStatusReceived() {
+    return BluetoothClassicPlatform.instance.onBondStatusReceived();
+  }
   Future<bool> connect(String address, String serviceUUID) {
     return BluetoothClassicPlatform.instance.connect(address, serviceUUID);
   }
