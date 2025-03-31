@@ -98,4 +98,11 @@ abstract class BluetoothClassicPlatform extends PlatformInterface {
   Future<bool> openBluetoothPairingScreen() async {
     throw UnimplementedError('writeTwoUint8Lists() has not been implemented.');
   }
+
+  /// Acquires the Android multicast lock.
+  Future<bool?> acquireMulticastLock();
+
+  /// Releases the previously acquired multicast lock.
+  Future<void> releaseMulticastLock();
+
 }
