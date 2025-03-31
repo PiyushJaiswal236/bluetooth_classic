@@ -202,4 +202,15 @@ class MethodChannelBluetoothClassic extends BluetoothClassicPlatform {
     return res ?? false;
   }
 
+  @override
+  Future<bool?> acquireMulticastLock() async {
+    final bool? result = await methodChannel.invokeMethod('acquireMulticastLock');
+    return result;
+  }
+
+  @override
+  Future<void> releaseMulticastLock() async {
+    await methodChannel.invokeMethod('releaseMulticastLock');
+  }
+
 }
