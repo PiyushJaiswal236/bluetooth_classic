@@ -72,4 +72,14 @@ class BluetoothClassic {
   Future<bool> openBluetoothPairingScreen() {
     return BluetoothClassicPlatform.instance.openBluetoothPairingScreen();
   }
+
+  Future<bool?> acquireMulticastLock(){
+    return BluetoothClassicPlatform.instance.acquireMulticastLock();
+
+  }
+
+  Future<void> releaseMulticastLock(){
+    return BluetoothClassicPlatform.instance.releaseMulticastLock();
+  }
+
 }
